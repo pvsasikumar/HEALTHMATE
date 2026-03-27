@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HealthMate — Your Personal Health Companion</title>
+  <meta name="description" content="Track water intake, glucose, blood pressure, workouts and medications with AI-powered health coaching." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+</head>
+<body>
+
+<!-- ============================================================
+     NOTIFICATION CONTAINER (fixed, top-right)
+     ============================================================ -->
+<div class="notif-container" id="notifContainer" aria-live="polite"></div>
+
+<!-- ============================================================
+     AUTH SCREENS
+     ============================================================ -->
+<div id="authScreen">
+
+  <!-- LOGIN -->
+  <div class="auth-wrap" id="loginWrap">
+    <div class="auth-card">
+      <div class="auth-logo">🩺</div>
+      <h1 class="auth-title">HealthMate</h1>
+      <p class="auth-sub">Your personal health companion</p>
+
+      <div class="form-row">
+        <label for="loginUser">Username</label>
+        <input type="text" id="loginUser" placeholder="Enter username" autocomplete="username" />
+      </div>
+      <div class="form-row">
+        <label for="loginPass">Password</label>
+        <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password" />
+      </div>
+      <p class="auth-error hidden" id="loginError"></p>
+      <button class="btn btn-primary w-full" onclick="doLogin()" style="justify-content:center;">
+        Sign In →
+      </button>
+      <div class="auth-switch">New here? <a onclick="showSignup()">Create account</a></div>
+    </div>
+  </div>
+
+  <!-- SIGN UP -->
+  <div class="auth-wrap hidden" id="signupWrap">
+    <div class="auth-card">
+      <div class="auth-logo">✨</div>
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-sub">Join HealthMate today — it's free</p>
+
+      <div class="grid-2" style="gap:12px;">
+        <div class="form-row">
+          <label for="suUser">Username *</label>
+          <input type="text" id="suUser" placeholder="username" autocomplete="username" />
+        </div>
+        <div class="form-row">
+          <label for="suPass">Password *</label>
+          <input type="password" id="suPass" placeholder="password" autocomplete="new-password" />
+        </div>
+        <div class="form-row">
+          <label for="suAge">Age</label>
+          <input type="number" id="suAge" placeholder="25" min="1" max="120" />
+        </div>
+        <div class="form-row">
+          <label for="suGender">Gender</label>
+          <select id="suGender">
+            <option value="">Select</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="suHeight">Height (cm)</label>
+          <input type="number" id="suHeight" placeholder="170" />
+        </div>
+        <div class="form-row">
+          <label for="suWeight">Weight (kg)</label>
+          <input type="number" id="suWeight" placeholder="70" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="suGoal">Health Goal</label>
+        <select id="suGoal">
+          <option value="">Select a goal</option>
+          <option>Lose Weight</option>
+          <option>Gain Muscle</option>
+          <option>Improve Fitness</option>
+          <option>Manage Health</option>
+        </select>
+      </div>
+
+      <p class="auth-error hidden" id="suError"></p>
+      <button class="btn btn-primary w-full" onclick="doSignup()" style="justify-content:center;">
+        Create Account
+      </button>
+      <div class="auth-switch">Already have an account? <a onclick="showLogin()">Sign in</a></div>
+    </div>
+  </div>
+</div><!-- /#authScreen -->
+
+
+<!-- ============================================================
+     MAIN APP (hidden until logged in)
+     ============================================================ -->
+<div id="appScreen" class="hidden">
+
+  <!-- Mobile top bar -->
+  <header class="topbar" role="banner">
+    <span class="topbar-brand">🩺 HealthMate</span>
+    <button class="hamburger" id="hamburger" aria-label="Toggle menu" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="shell">
+
+    <!-- ====================== SIDEBAR ====================== -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+      <div class="sidebar-brand">
+        <span class="brand-logo">🩺</span>
+        <div class="brand-text">
+          <div class="brand-name">HealthMate</div>
+          <div class="brand-sub">Health Tracker</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-page="dashboard" onclick="navTo('dashboard')">
+          <span class="icon">🏠</span><span class="label">Dashboard</span>
+        </button>
+        <button class="nav-item" data-page="health" onclick="navTo('health')">
+          <span class="icon">❤️</span><span class="label">Health</span>
+        </button>
+        <button class="nav-item" data-page="fitness" onclick="navTo('fitness')">
+          <span class="icon">⚡</span><span class="label">Fitness</span>
+        </button>
+        <button class="nav-item" data-page="reminders" onclick="navTo('reminders')">
+          <span class="icon">🔔</span><span class="label">Reminders</span>
+        </button>
+        <button class="nav-item" data-page="coach" onclick="navTo('coach')">
+          <span class="icon">🤖</span><span class="label">AI Coach</span>
+        </button>
+        <button class="nav-item" data-page="leaderboard" onclick="navTo('leaderboard')">
+          <span class="icon">🏆</span><span class="label">Leaderboard</span>
+        </button>
+        <button class="nav-item" data-page="profile" onclick="navTo('profile')">
+          <span class="icon">👤</span><span class="label">Profile</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="nav-item" onclick="doLogout()" style="color:var(--red);">
+          <span class="icon">→</span><span class="label">Logout</span>
+        </button>
+      </div>
+    </aside><!-- /.sidebar -->
+
+    <!-- ====================== MAIN CONTENT ====================== -->
+    <main class="main" role="main">
+
+      <!-- ================================================
+           DASHBOARD PAGE
+           ================================================ -->
+      <section class="page active" id="page-dashboard" aria-label="Dashboard">
+        <div class="page-header">
+          <h1 id="dashGreeting">Good morning!</h1>
+          <p>Here's your health summary for today.</p>
+        </div>
+
+        <!-- Quick-stat cards -->
+        <div class="grid-4 section">
+          <div class="stat">
+            <div class="stat-label">Water Today</div>
+            <div class="stat-value" id="dashWater">0</div>
+            <div class="stat-unit">ml / 2000 ml</div>
+            <div class="progress-bar-track mt-2">
+              <div class="progress-bar-fill" id="dashWaterBar" style="background:var(--accent);width:0%"></div>
+            </div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Glucose</div>
+            <div class="stat-value" id="dashGlucose">--</div>
+            <div class="stat-unit">mg/dL (last)</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Blood Pressure</div>
+            <div class="stat-value" id="dashBP">--</div>
+            <div class="stat-unit">mmHg (last)</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Reminders</div>
+            <div class="stat-value" id="dashReminders">0</div>
+            <div class="stat-unit">active today</div>
+          </div>
+        </div>
+
+        <!-- Quick-action cards -->
+        <div class="grid-2 section">
+          <!-- Water quick-log -->
+          <div class="card">
+            <div class="card-title">💧 Quick Water Log</div>
+            <div class="water-btns">
+              <button class="water-btn" onclick="logWater(150)">150 ml</button>
+              <button class="water-btn" onclick="logWater(250)">250 ml</button>
+              <button class="water-btn" onclick="logWater(350)">350 ml</button>
+              <button class="water-btn" onclick="logWater(500)">500 ml</button>
+            </div>
+            <div class="flex gap-2">
+              <input type="number" id="customWater" placeholder="Custom ml" min="1" />
+              <button class="btn btn-primary btn-sm" onclick="logCustomWater()">Add</button>
+            </div>
+            <div class="mt-3 log-list" id="waterLogList">
+              <div class="empty"><span class="empty-icon">💧</span>No logs today</div>
+            </div>
+          </div>
+
+          <!-- Today's medications -->
+          <div class="card">
+            <div class="card-title">💊 Today's Medications</div>
+            <div id="dashReminderList">
+              <div class="empty"><span class="empty-icon">💊</span>No reminders set</div>
+            </div>
+            <button class="btn btn-ghost btn-sm mt-3" onclick="navTo('reminders')">+ Add Reminder</button>
+          </div>
+        </div>
+
+        <!-- 7-day water trend chart -->
+        <div class="card section">
+          <div class="card-title">📈 7-Day Water Trend</div>
+          <svg class="chart-svg" id="waterChart" height="130" viewBox="0 0 600 130" aria-label="7-day water intake chart"></svg>
+        </div>
+      </section><!-- /#page-dashboard -->
+
+
+      <!-- ================================================
+           HEALTH PAGE
+           ================================================ -->
+      <section class="page" id="page-health" aria-label="Health Tracking">
+        <div class="page-header">
+          <h1>Health Tracking</h1>
+          <p>Monitor your vitals and health metrics.</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" data-tab="water"   onclick="healthTab('water')">💧 Water</button>
+          <button class="tab"        role="tab" data-tab="glucose" onclick="healthTab('glucose')">🩸 Glucose</button>
+          <button class="tab"        role="tab" data-tab="bp"      onclick="healthTab('bp')">❤️ Blood Pressure</button>
+          <button class="tab"        role="tab" data-tab="tablets" onclick="healthTab('tablets')">💊 Medications</button>
+        </div>
+
+        <!-- Water tab -->
+        <div id="htab-water">
+          <div class="grid-2 section">
+            <div class="card">
+              <div class="card-title">Log Water Intake</div>
+              <div class="water-btns">
+                <button class="water-btn" onclick="logWater(150)">150 ml</button>
+                <button class="water-btn" onclick="logWater(250)">250 ml</button>
+                <button class="water-btn" onclick="logWater(350)">350 ml</button>
+                <button class="water-btn" onclick="logWater(500)">500 ml</button>
+                <button class="water-btn" onclick="logWater(750)">750 ml</button>
+              </div>
+              <div class="flex gap-2">
+                <input type="number" id="customWater2" placeholder="Custom ml" min="1" />
+                <button class="btn btn-primary btn-sm" onclick="logCustomWater2()">Log</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Today's Progress</div>
+              <div style="display:flex;align-items:center;gap:24px;">
+                <svg width="100" height="100" viewBox="0 0 100 100" aria-label="Water intake ring">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--surface2)" stroke-width="10"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--accent)" stroke-width="10"
+                    stroke-dasharray="251.2" id="waterRing" stroke-dashoffset="251.2"
+                    stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="47" text-anchor="middle" font-size="13" font-weight="600" fill="var(--text)" id="waterRingPct">0%</text>
+                  <text x="50" y="60" text-anchor="middle" font-size="9" fill="var(--muted)">of goal</text>
+                </svg>
+                <div>
+                  <div class="stat-label">Consumed</div>
+                  <div class="stat-value" id="waterConsumed">0 ml</div>
+                  <div class="stat-unit">Goal: 2000 ml</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Recent Logs</div>
+            <div class="log-list" id="waterFullLog"><div class="empty">No logs yet</div></div>
+          </div>
+        </div><!-- /#htab-water -->
+
+        <!-- Glucose tab -->
+        <div id="htab-glucose" class="hidden">
+          <div class="grid-2 section">
+            <div class="card">
+              <div class="card-title">Log Blood Glucose</div>
+              <div class="form-row">
+                <label for="glucoseVal">Glucose Value (mg/dL)</label>
+                <input type="number" id="glucoseVal" placeholder="e.g. 95" min="0" max="600" />
+              </div>
+              <div class="form-row">
+                <label for="glucoseCtx">Context</label>
+                <select id="glucoseCtx">
+                  <option>Fasting</option>
+                  <option>Before meal</option>
+                  <option>After meal</option>
+                  <option>Bedtime</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="logGlucose()">Log Reading</button>
+            </div>
+            <div class="card">
+              <div class="card-title">Glucose Status</div>
+              <div id="glucoseStatus"><div class="empty"><span class="empty-icon">🩸</span>No readings yet</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Glucose History</div>
+            <div class="log-list" id="glucoseLog"><div class="empty">No readings logged</div></div>
+          </div>
+        </div><!-- /#htab-glucose -->
+
+        <!-- BP tab -->
+        <div id="htab-bp" class="hidden">
+          <div class="grid-2 section">
+            <div class="card">
+              <div class="card-title">Log Blood Pressure</div>
+              <div class="form-row">
+                <label for="bpSys">Systolic (mmHg)</label>
+                <input type="number" id="bpSys" placeholder="e.g. 120" min="60" max="250" />
+              </div>
+              <div class="form-row">
+                <label for="bpDia">Diastolic (mmHg)</label>
+                <input type="number" id="bpDia" placeholder="e.g. 80" min="40" max="150" />
+              </div>
+              <button class="btn btn-primary" onclick="logBP()">Log Reading</button>
+            </div>
+            <div class="card">
+              <div class="card-title">BP Classification</div>
+              <div id="bpStatus"><div class="empty"><span class="empty-icon">❤️</span>No readings yet</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">BP History</div>
+            <div class="log-list" id="bpLog"><div class="empty">No readings logged</div></div>
+          </div>
+        </div><!-- /#htab-bp -->
+
+        <!-- Medications tab -->
+        <div id="htab-tablets" class="hidden">
+          <div class="grid-2 section">
+            <div class="card">
+              <div class="card-title">Add Medication</div>
+              <div class="form-row">
+                <label for="tabName">Medication Name</label>
+                <input type="text" id="tabName" placeholder="e.g. Metformin" />
+              </div>
+              <div class="form-row">
+                <label for="tabDosage">Dosage</label>
+                <input type="text" id="tabDosage" placeholder="e.g. 500 mg" />
+              </div>
+              <div class="form-row">
+                <label for="tabTime">Time</label>
+                <input type="time" id="tabTime" />
+              </div>
+              <button class="btn btn-primary" onclick="addTablet()">Add Medication</button>
+            </div>
+            <div class="card">
+              <div class="card-title">My Medications</div>
+              <div id="tabletList"><div class="empty"><span class="empty-icon">💊</span>No medications added</div></div>
+            </div>
+          </div>
+        </div><!-- /#htab-tablets -->
+      </section><!-- /#page-health -->
+
+
+      <!-- ================================================
+           FITNESS PAGE
+           ================================================ -->
+      <section class="page" id="page-fitness" aria-label="Fitness Tracker">
+        <div class="page-header">
+          <h1>Fitness Tracker</h1>
+          <p>Log workouts and track your activity progress.</p>
+        </div>
+
+        <div class="grid-2 section">
+          <div class="card">
+            <div class="card-title">Log Workout</div>
+            <div class="form-row">
+              <label for="exType">Exercise Type</label>
+              <select id="exType">
+                <option>Running</option>
+                <option>Walking</option>
+                <option>Cycling</option>
+                <option>Swimming</option>
+                <option>Weight Training</option>
+                <option>Yoga</option>
+                <option>HIIT</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="exDur">Duration (minutes)</label>
+              <input type="number" id="exDur" placeholder="30" min="1" />
+            </div>
+            <div class="form-row">
+              <label for="exCal">Calories Burned (est.)</label>
+              <input type="number" id="exCal" placeholder="200" min="0" />
+            </div>
+            <div class="form-row">
+              <label for="exNotes">Notes</label>
+              <input type="text" id="exNotes" placeholder="How did it feel?" />
+            </div>
+            <button class="btn btn-success" onclick="logWorkout()">⚡ Log Workout</button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Weekly Stats</div>
+            <div class="grid-2" style="gap:10px;">
+              <div class="stat"><div class="stat-label">Workouts</div><div class="stat-value" id="wkCount">0</div></div>
+              <div class="stat"><div class="stat-label">Minutes</div><div class="stat-value" id="wkMins">0</div></div>
+              <div class="stat"><div class="stat-label">Calories</div><div class="stat-value" id="wkCals">0</div></div>
+              <div class="stat">
+                <div class="stat-label">Streak</div>
+                <div class="stat-value" id="wkStreak">0</div>
+                <div class="stat-unit">days 🔥</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="card-title">Workout Log</div>
+          <div class="log-list" id="workoutLog" style="max-height:300px;">
+            <div class="empty">No workouts logged yet</div>
+          </div>
+        </div>
+      </section><!-- /#page-fitness -->
+
+
+      <!-- ================================================
+           REMINDERS PAGE
+           ================================================ -->
+      <section class="page" id="page-reminders" aria-label="Medication Reminders">
+        <div class="page-header">
+          <h1>Medication Reminders</h1>
+          <p>Never miss a dose with smart reminders.</p>
+        </div>
+
+        <div class="grid-2 section">
+          <!-- Add reminder form -->
+          <div class="card">
+            <div class="card-title">🔔 Set New Reminder</div>
+            <div class="form-row">
+              <label for="remName">Medication Name</label>
+              <input type="text" id="remName" placeholder="e.g. Vitamin D" />
+            </div>
+            <div class="form-row">
+              <label for="remDosage">Dosage</label>
+              <input type="text" id="remDosage" placeholder="e.g. 1000 IU" />
+            </div>
+            <div class="form-row">
+              <label for="remTime">Time</label>
+              <input type="time" id="remTime" />
+            </div>
+            <div class="form-row">
+              <label for="remFreq">Frequency</label>
+              <select id="remFreq">
+                <option value="daily">Daily</option>
+                <option value="twice">Twice Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="remNotes">Notes</label>
+              <input type="text" id="remNotes" placeholder="With food, before sleep, etc." />
+            </div>
+            <div class="form-row toggle-row">
+              <label style="margin:0;">Enable browser notifications</label>
+              <label class="toggle">
+                <input type="checkbox" id="remNotif" checked />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <button class="btn btn-primary mt-3 w-full" onclick="addReminder()" style="justify-content:center;">
+              🔔 Set Reminder
+            </button>
+          </div>
+
+          <!-- Active reminders list -->
+          <div class="card">
+            <div class="card-title">Active Reminders</div>
+            <div id="reminderList">
+              <div class="empty"><span class="empty-icon">🔔</span>No reminders set</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's schedule timeline -->
+        <div class="card section">
+          <div class="card-title">📅 Today's Schedule</div>
+          <div id="reminderTimeline">
+            <div class="empty">Set reminders to see your schedule here.</div>
+          </div>
+        </div>
+      </section><!-- /#page-reminders -->
+
+
+      <!-- ================================================
+           AI COACH PAGE
+           ================================================ -->
+      <section class="page" id="page-coach" aria-label="AI Health Coach">
+        <div class="page-header">
+          <h1>AI Health Coach</h1>
+          <p>Get personalised health advice powered by Google Gemini.</p>
+        </div>
+
+        <!-- Chat card (full width) -->
+        <div class="card section">
+          <div class="card-title">🤖 Chat with your coach</div>
+          <div class="chat-wrapper">
+            <div class="chat-box" id="chatBox" role="log" aria-live="polite">
+              <div class="chat-msg ai">
+                Hi! I'm your HealthMate AI coach powered by Google Gemini. I can help with nutrition,
+                fitness, medication guidance, and health tips. What would you like to know? 😊
+              </div>
+            </div>
+            <div class="chat-input-row">
+              <input type="text" id="chatInput" placeholder="Ask anything about your health..." aria-label="Chat message" />
+              <button class="btn btn-primary" onclick="sendChat()">Send ↑</button>
+            </div>
+            <!-- Quick suggestion chips -->
+            <div class="chat-suggestions">
+              <button class="btn btn-ghost btn-sm" onclick="quickChat('How much water should I drink daily?')">💧 Water intake?</button>
+              <button class="btn btn-ghost btn-sm" onclick="quickChat('What are normal blood glucose levels?')">🩸 Normal glucose?</button>
+              <button class="btn btn-ghost btn-sm" onclick="quickChat('Give me a beginner workout plan')">⚡ Workout plan</button>
+              <button class="btn btn-ghost btn-sm" onclick="quickChat('Tips for better sleep')">😴 Sleep tips</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Insights + Tips row -->
+        <div class="grid-2 section">
+          <div class="card">
+            <div class="card-title">💡 Your Health Insights</div>
+            <div id="coachInsights">
+              <div class="empty">Chat with your coach to receive personalised insights.</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">📌 Daily Tips</div>
+            <div id="dailyTips">
+              <div class="tip-item">
+                <span class="tip-icon">💧</span>
+                <div><div class="tip-name">Stay Hydrated</div><div class="tip-meta">Drink water 30 minutes before meals</div></div>
+              </div>
+              <div class="tip-item">
+                <span class="tip-icon">🚶</span>
+                <div><div class="tip-name">Move Every Hour</div><div class="tip-meta">Take a 5-minute walk each hour</div></div>
+              </div>
+              <div class="tip-item">
+                <span class="tip-icon">😴</span>
+                <div><div class="tip-name">Sleep 7–9 Hours</div><div class="tip-meta">Consistent sleep improves metabolism</div></div>
+              </div>
+              <div class="tip-item">
+                <span class="tip-icon">🥗</span>
+                <div><div class="tip-name">Eat More Greens</div><div class="tip-meta">Leafy greens lower inflammation</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section><!-- /#page-coach -->
+
+
+      <!-- ================================================
+           LEADERBOARD PAGE
+           ================================================ -->
+      <section class="page" id="page-leaderboard" aria-label="Leaderboard">
+        <div class="page-header">
+          <h1>Leaderboard</h1>
+          <p>See how you compare with other HealthMate users.</p>
+        </div>
+        <div class="card section">
+          <div class="card-title">🏆 Top Health Champions</div>
+          <div id="leaderboardList">
+            <div class="empty">No users yet</div>
+          </div>
+        </div>
+      </section><!-- /#page-leaderboard -->
+
+
+      <!-- ================================================
+           PROFILE PAGE
+           ================================================ -->
+      <section class="page" id="page-profile" aria-label="My Profile">
+        <div class="page-header">
+          <h1>My Profile</h1>
+          <p>Manage your personal information and health goals.</p>
+        </div>
+
+        <div class="grid-2 section">
+          <!-- Personal info form -->
+          <div class="card">
+            <div class="card-title">Personal Information</div>
+            <div class="form-row">
+              <label for="profUser">Username</label>
+              <input type="text" id="profUser" readonly style="background:var(--surface2);" />
+            </div>
+            <div class="form-row">
+              <label for="profAge">Age</label>
+              <input type="number" id="profAge" placeholder="25" />
+            </div>
+            <div class="form-row">
+              <label for="profGender">Gender</label>
+              <select id="profGender">
+                <option value="">Select</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="profHeight">Height (cm)</label>
+              <input type="number" id="profHeight" placeholder="170" />
+            </div>
+            <div class="form-row">
+              <label for="profWeight">Weight (kg)</label>
+              <input type="number" id="profWeight" placeholder="70" />
+            </div>
+            <div class="form-row">
+              <label for="profGoal">Goal</label>
+              <select id="profGoal">
+                <option value="">Select goal</option>
+                <option>Lose Weight</option>
+                <option>Gain Muscle</option>
+                <option>Improve Fitness</option>
+                <option>Manage Health</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="profPhone">Phone Number</label>
+              <input type="tel" id="profPhone" placeholder="+91 XXXXX XXXXX" />
+            </div>
+            <button class="btn btn-primary" onclick="saveProfile()">💾 Save Changes</button>
+          </div>
+
+          <!-- Health summary + BMI -->
+          <div class="card">
+            <div class="card-title">Health Summary</div>
+            <div id="profileStats"></div>
+            <div style="margin-top:20px;">
+              <div class="card-title" style="font-size:13px;margin-bottom:10px;">⚖️ BMI Calculator</div>
+              <div class="stat" id="bmiResult">
+                <div class="stat-label">BMI</div>
+                <div class="stat-value" id="bmiVal">--</div>
+                <div class="stat-unit" id="bmiCat">Enter height &amp; weight to calculate</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section><!-- /#page-profile -->
+
+    </main><!-- /.main -->
+  </div><!-- /.shell -->
+</div><!-- /#appScreen -->
+
+<!-- App JavaScript -->
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
